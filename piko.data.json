@@ -1,0 +1,10 @@
+{
+  "collections": {
+    "consult_reservations": {
+      "read": "admin",
+      "create": "public",
+      "update": "admin",
+      "delete": "admin"
+    }
+  }
+}
