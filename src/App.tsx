@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { collection, isAdmin } from '@piko/data';
-import mathNotebook from '@piko/photos/math-notebook';
-import mathGuidance from '@piko/photos/math-guidance';
-import classroom from '@piko/photos/classroom';
 import './styles.css';
+
+const mathGuidance =
+  'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=900&q=80';
+const mathNotebook =
+  'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80';
+const classroom =
+  'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80';
 
 type Teacher = {
   name: string;
@@ -138,22 +141,33 @@ type Reservation = {
   message: string;
 };
 
-const reservations = collection<Reservation>('consult_reservations');
+const STORAGE_KEY = 'consult_reservations';
+
+const reservations = {
+  async create(data: Omit<Reservation, 'id' | 'createdAt'>) {
+    const existing: Reservation[] = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const newItem: Reservation = {
+      ...data,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([newItem, ...existing]));
+    return newItem;
+  },
+  async list(): Promise<Reservation[]> {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  },
+};
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [admin, setAdmin] = useState(false);
 
   useEffect(() => {
-    let alive = true;
-    isAdmin()
-      .then((value) => {
-        if (alive) setAdmin(value === true);
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setAdmin(true);
+    }
   }, []);
 
   return (
@@ -741,8 +755,8 @@ function AdminPanel() {
     if (loaded.current) return;
     loaded.current = true;
     reservations
-      .list({ order: '-createdAt' })
-      .then((data) => setItems(data as Reservation[]))
+      .list()
+      .then((data) => setItems(data))
       .catch(() => setItems([]));
   }, []);
 
